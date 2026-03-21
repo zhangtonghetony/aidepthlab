@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG智能问答 - AI知识助手</title>
+    <style>
+
+/* 向量化状态 */
+.vectorization-status {
+    background-color: #fff8e1;
+    border: 1px solid #ffc107;
+    border-radius: 8px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    display: none;
+}
+
+.vectorization-status .status-icon {
+    font-size: 24px;
+    animation: pulse 1.5s infinite;
+}
+
+.vectorization-status .status-text {
+    flex: 1;
+}
+
+.vectorization-status .status-text strong {
+    color: #d39e00;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.vectorization-status .status-text p {
+    color: #666;
+    font-size: 12px;
+    margin: 2px 0;
+}
+
+.vectorization-progress {
+    width: 100%;
+    height: 6px;
+    background-color: #eee;
+    border-radius: 3px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.vectorization-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ffc107, #ff9800);
+    width: 0%;
+    transition: width 0.3s ease;
+    border-radius: 3px;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* 系统状态提示 */
+.system-status {
+    margin-bottom: 20px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.status-waiting {
+    background-color: #f8f9fa;
+    color: #6c757d;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.status-processing {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.status-ready {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.status-error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+/* 上传控制按钮 */
+.upload-controls {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.control-btn {
+    flex: 1;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.upload-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.upload-btn:hover:not(:disabled) {
+    background-color: #0056b3;
+}
+
+.upload-btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.clear-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+.clear-btn:hover {
+    background-color: #545b62;
+}
+
+/* 模态框 */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.modal-icon {
+    font-size: 48px;
+    margin-bottom: 20px;
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.modal-text {
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+    line-height: 1.5;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 100px;
+}
+
+.modal-btn.primary {
+    background-color: #007bff;
+    color: white;
+}
+
+.modal-btn.primary:hover {
+    background-color: #0056b3;
+}
+
+/* 上传区域禁用状态 */
+.upload-area.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.upload-area.disabled:hover {
+    border-color: #007bff;
+    background-color: transparent;
+}
+
+/* 文件状态 */
+.file-status.status-processing {
+    background-color: #ffc107;
+    color: #333;
+}
+
+/* 加载动画 */
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    border-top-color: #007bff;
+    border-radius: 50%;
+    animation: spinner-animation 1s linear infinite;
+}
+
+@keyframes spinner-animation {
+    to { transform: rotate(360deg); }
+}
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #3498db;
+            --primary-light: #5dade2;
+            --primary-dark: #2980b9;
+            --secondary: #2ecc71;
+            --secondary-light: #58d68d;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --dark: #2c3e50;
+            --dark-light: #34495e;
+            --gray: #7f8c8d;
+            --gray-light: #bdc3c7;
+            --light: #f8f9fa;
+            --border: #e1e8ed;
+            --card-bg: #ffffff;
+            --user-msg-bg: #e3f2fd;
+            --ai-msg-bg: #f5f5f5;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: var(--dark);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* 头部 */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--card-bg);
+            border-radius: 20px 20px 0 0;
+            padding: 20px 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .nav-button {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .nav-button.home {
+            background: linear-gradient(135deg, var(--gray), var(--dark));
+        }
+
+        .nav-button.home:hover {
+            box-shadow: 0 4px 12px rgba(127, 140, 141, 0.3);
+        }
+
+        /* 主要内容 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 20px;
+            background: var(--card-bg);
+            border-radius: 0 0 20px 20px;
+            padding: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            min-height: 80vh;
+        }
+
+        /* 左侧上传区域 */
+        .upload-section {
+            border-right: 1px solid var(--border);
+            padding-right: 30px;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .upload-area {
+            border: 3px dashed var(--primary);
+            border-radius: 15px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(52, 152, 219, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: rgba(52, 152, 219, 0.1);
+            border-color: var(--primary-dark);
+        }
+
+        .upload-area.dragover {
+            background: rgba(46, 204, 113, 0.1);
+            border-color: var(--secondary);
+        }
+
+        .upload-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .upload-text h3 {
+            color: var(--dark);
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .upload-text p {
+            color: var(--gray);
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-button {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            border: none;
+            font-size: 16px;
+        }
+
+        .upload-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .file-list {
+            margin-top: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background: var(--light);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .file-icon.pdf { background: #ff6b6b; color: white; }
+        .file-icon.txt { background: #51cf66; color: white; }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 4px;
+            word-break: break-all;
+        }
+
+        .file-meta {
+            display: flex;
+            gap: 10px;
+            font-size: 12px;
+            color: var(--gray);
+        }
+
+        .file-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-uploading { background: #fff3bf; color: #e67700; }
+        .status-success { background: #d3f9d8; color: #2b8a3e; }
+        .status-error { background: #ffe3e3; color: #c92a2a; }
+
+        .file-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .file-action-btn {
+            background: none;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .file-action-btn:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        /* 右侧对话区域 */
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 20px;
+        }
+
+        .chat-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .chat-subtitle {
+            color: var(--gray);
+            font-size: 14px;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chat-messages {
+            min-height: 100%;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-user {
+            text-align: right;
+        }
+
+        .message-ai {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 20px;
+            line-height: 1.5;
+        }
+
+        .message-user .message-content {
+            background: var(--user-msg-bg);
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-ai .message-content {
+            background: var(--ai-msg-bg);
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-text {
+            word-wrap: break-word;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 5px;
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray);
+        }
+
+        .welcome-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .welcome-text h3 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .welcome-text p {
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* 输入区域 */
+        .input-section {
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid var(--border);
+            border-radius: 25px;
+            font-size: 16px;
+            resize: none;
+            min-height: 60px;
+            max-height: 120px;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .send-button {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover:not(:disabled) {
+            transform: translateY(-2px) scale(1.05);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .input-hint {
+            text-align: center;
+            color: var(--gray);
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* 上传进度 */
+        .progress-container {
+            display: none;
+            background: var(--light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .progress-title {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .progress-text {
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 4px;
+        }
+        /* 新增：清空历史按钮样式 */
+        .clear-history-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            color: #6c757d;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            justify-content: center;
+        }
+
+        .clear-history-btn:hover {
+            background: #e2e6ea;
+        }
+
+        .clear-history-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 新增：历史记录指示器 */
+        .history-indicator {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            padding: 5px 10px;
+            background: #f8f9fa;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+
+        /* 提示信息 */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--dark);
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+            display: none;
+        }
+
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--gray-light);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--gray);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .upload-section {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+                padding-right: 0;
+                padding-bottom: 30px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .nav-button span {
+                display: none;
+            }
+
+            .nav-button {
+                padding: 10px;
+            }
+
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">🤖</div>
+                <div class="logo-text">RAG智能问答</div>
+            </div>
+
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">U</div>
+                <a href="/" class="nav-button home">
+                    <span>🏠</span>
+                    <span>返回首页</span>
+                </a>
+            </div>
+        </header>
+
+        <!-- 主要内容 -->
+        <main class="main-content">
+            <!-- 左侧上传区域 -->
+            <div class="upload-section">
+                <h2 class="section-title">📁 上传文档</h2>
+
+                <!-- 历史记录状态 -->
+                <div class="history-status" id="historyStatus" style="margin-bottom: 15px;">
+                    <div class="history-info">
+                        <span>📊 历史记录:</span>
+                        <span id="historyCount">0 条</span>
+                    </div>
+                </div>
+
+                <!-- 向量化状态提示 -->
+                <div class="vectorization-status" id="vectorizationStatus" style="display: none;">
+                    <div class="status-icon">⏳</div>
+                    <div class="status-text">
+                        <strong>文档向量化中...</strong>
+                        <p>请勿关闭页面，向量化完成后会自动刷新</p>
+                        <div class="vectorization-progress">
+                            <div class="vectorization-fill" id="vectorizationProgressFill"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 上传区域 -->
+                <div class="upload-area" id="dropArea" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📤</div>
+                    <div class="upload-text">
+                        <h3>点击上传或拖放文件</h3>
+                        <p>支持 TXT 和 PDF 格式</p>
+                        <p>最大文件大小：10MB</p>
+                        <p style="color: #666; font-size: 12px; margin-top: 5px;">（文档上传为可选功能）</p>
+                    </div>
+                    <input type="file"
+                           class="file-input"
+                           id="fileInput"
+                           accept=".txt,.pdf"
+                           multiple
+                           onchange="handleFiles(this.files)">
+                </div>
+
+                <!-- 系统状态提示 -->
+                <div class="system-status" id="systemStatus"></div>
+
+                <!-- 文件列表 -->
+                <div class="file-list" id="fileList">
+                    <div class="no-files">暂无已上传文件</div>
+                </div>
+
+                <!-- 上传进度 -->
+                <div class="progress-container" id="progressContainer">
+                    <div class="progress-header">
+                        <div class="progress-title">上传进度</div>
+                        <div class="progress-text" id="progressText">0%</div>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- 上传控制按钮 -->
+                <div class="upload-controls">
+                    <button class="control-btn upload-btn" onclick="startUpload()" id="uploadBtn">
+                        开始上传
+                    </button>
+                    <button class="control-btn clear-btn" onclick="clearFileList()" id="clearBtn">
+                        清空列表
+                    </button>
+                </div>
+
+                <!-- 下载报告区域 -->
+                <div class="download-section" id="downloadSection" style="margin-top: 20px; display: none;">
+                    <h3 style="margin-bottom: 10px; color: #333; font-size: 16px;">📥 下载报告</h3>
+                    <div class="report-list" id="reportList">
+                        <!-- 报告列表会动态加载到这里 -->
+                    </div>
+                </div>
+
+                <!-- 清空对话历史按钮 -->
+                <button class="clear-history-btn" onclick="clearChatHistory()" id="clearHistoryBtn" style="margin-top: 20px;">
+                    🗑️ 清空对话历史
+                </button>
+
+                <!-- 刷新报告列表按钮 -->
+                <button class="refresh-reports-btn" onclick="loadReportList()" id="refreshReportsBtn" style="margin-top: 10px; display: block; width: 100%;">
+                    🔄 刷新报告列表
+                </button>
+            </div>
+
+            <!-- 右侧对话区域 -->
+            <div class="chat-section">
+                <div class="chat-header">
+                    <h2 class="chat-title">💬 AI智能问答</h2>
+                    <p class="chat-subtitle">可直接开始对话，也可上传文档后基于文档内容问答。如有报告生成可点击下载。</p>
+                </div>
+
+                <!-- 对话容器 -->
+                <div class="chat-container" id="chatContainer">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 欢迎消息 -->
+                        <div class="welcome-message" id="welcomeMessage">
+                            <div class="welcome-icon">🤖</div>
+                            <div class="welcome-text">
+                                <h3>欢迎使用RAG智能问答</h3>
+                                <p>您可以直接开始对话，也可以上传文档后基于文档内容进行问答</p>
+                                <p>上传文档可以获得更精准的个性化回答</p>
+                                <p>温馨提示：某些情况下模型回复可能稍慢，还请耐心等待</p>
+                                <p><strong>🎯 新功能：</strong>支持生成专业报告，生成后会显示在左侧下载区域</p>
+                            </div>
+                        </div>
+
+                        <!-- 消息会动态添加到这里 -->
+                    </div>
+                </div>
+
+                <!-- 输入区域 -->
+                <div class="input-section">
+                    <div class="input-container">
+                        <textarea
+                            class="message-input"
+                            id="messageInput"
+                            placeholder="请输入您的问题或与AI聊天..."
+                            rows="1"
+                            onkeydown="handleKeyDown(event)"
+                            oninput="autoResize(this)"></textarea>
+                        <button
+                            class="send-button"
+                            id="sendButton"
+                            onclick="sendMessage()">
+                            📤
+                        </button>
+                    </div>
+                    <div class="input-hint">按 Enter 发送，Shift + Enter 换行</div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 提示信息 -->
+        <div class="toast" id="toast"></div>
+
+        <!-- 模态框（用于系统忙提示） -->
+        <div class="modal" id="systemBusyModal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-icon">⏳</div>
+                <h3 class="modal-title">系统忙</h3>
+                <p class="modal-text" id="modalText">系统正在处理上一个文件的向量化任务，请稍后再试。</p>
+                <div class="modal-buttons">
+                    <button class="modal-btn primary" onclick="hideModal()">确定</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 状态管理
+        let uploadedFiles = [];
+        let isUploading = false;
+        let isVectorizing = false;
+        let vectorizationCheckTimer = null;
+        let chatSessionId = generateSessionId();
+        let currentHistoryLength = 0;  // 当前历史记录条数
+
+        // 生成会话ID
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUserInfo();
+            setupDragAndDrop();
+            checkSystemStatus();
+
+            // 加载历史记录
+            loadChatHistory();
+
+            // 加载报告列表
+            loadReportList();
+        });
+
+        // 加载用户信息
+        function loadUserInfo() {
+            try {
+                const user = JSON.parse(sessionStorage.getItem('user') || localStorage.getItem('user') || '{}');
+                if (user.username) {
+                    const avatar = document.getElementById('userAvatar');
+                    avatar.textContent = user.username.charAt(0).toUpperCase();
+                }
+            } catch (e) {
+                console.error('加载用户信息失败:', e);
+            }
+        }
+
+        // 加载历史记录
+        async function loadChatHistory() {
+            try {
+                const response = await fetch(`/rag_agent/api/load-history?session_id=${chatSessionId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.history && data.history.length > 0) {
+                        displayHistory(data.history);
+                        updateHistoryIndicator(data.history.length);
+                    }
+                }
+            } catch (error) {
+                console.error('加载历史记录失败:', error);
+            }
+        }
+
+        // 显示历史记录
+        function displayHistory(history) {
+            const chatMessages = document.getElementById('chatMessages');
+
+            // 清空当前消息（保留欢迎消息）
+            hideWelcomeMessage();
+
+            // 重新显示所有历史消息
+            history.forEach(msg => {
+                addMessage(msg.content, msg.role === 'user' ? 'user' : 'ai', false, true);
+            });
+        }
+
+        // 更新历史记录指示器
+        function updateHistoryIndicator(count) {
+            const historyIndicator = document.getElementById('historyCount');
+            if (historyIndicator) {
+                historyIndicator.textContent = `${count} 条`;
+            }
+            currentHistoryLength = count;
+        }
+
+        // 检查对话历史
+        async function checkChatHistory() {
+            try {
+                const response = await fetch(`/rag_agent/api/get-history-length?session_id=${chatSessionId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        updateHistoryIndicator(data.history_length);
+                        return data.history_length;
+                    }
+                }
+            } catch (error) {
+                console.error('检查对话历史失败:', error);
+            }
+            return 0;
+        }
+
+        // 加载报告列表
+        async function loadReportList() {
+            try {
+                const response = await fetch('/rag_agent/api/report-list');
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.reports && data.reports.length > 0) {
+                        displayReports(data.reports);
+                        document.getElementById('downloadSection').style.display = 'block';
+                    } else {
+                        document.getElementById('downloadSection').style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('加载报告列表失败:', error);
+            }
+        }
+
+        // 显示报告列表
+        function displayReports(reports) {
+            const reportList = document.getElementById('reportList');
+            if (reports.length === 0) {
+                reportList.innerHTML = '<div class="no-reports">暂无报告可下载</div>';
+                return;
+            }
+
+            reportList.innerHTML = reports.map(report => `
+                <div class="report-item">
+                    <div class="report-icon">📄</div>
+                    <div class="report-info">
+                        <div class="report-title" title="${report.title}">${truncateText(report.title, 20)}</div>
+                        <div class="report-meta">
+                            <span>${formatFileSize(report.size)}</span>
+                            <span>${report.modified}</span>
+                        </div>
+                    </div>
+                    <button class="download-btn" onclick="downloadReport('${report.filename}', '${report.title}')" title="下载报告">
+                        ⬇️
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // 下载报告
+        function downloadReport(filename, title) {
+            // 创建下载链接
+            const downloadUrl = `/rag_agent/api/download-report/${filename}`;
+
+            // 创建临时a标签触发下载
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = title + '.html';
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast(`开始下载报告: ${title}`, 'success');
+        }
+
+        // 截断文本
+        function truncateText(text, maxLength) {
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // 检查系统状态
+        function checkSystemStatus() {
+            const statusDiv = document.getElementById('systemStatus');
+            statusDiv.innerHTML = '<div class="status-waiting">🔍 检查系统状态...</div>';
+
+            fetch('/rag_agent/api/system-status')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.is_vectorizing) {
+                        showVectorizationStatus();
+                    } else {
+                        hideVectorizationStatus();
+                    }
+                })
+                .catch(() => {
+                    statusDiv.innerHTML = '<div class="status-error">❌ 无法获取系统状态</div>';
+                });
+        }
+
+        // 显示向量化状态
+        function showVectorizationStatus() {
+            const statusDiv = document.getElementById('vectorizationStatus');
+            statusDiv.style.display = 'flex';
+            isVectorizing = true;
+
+            // 开始模拟进度
+            simulateVectorizationProgress();
+
+            // 禁用上传区域
+            const dropArea = document.getElementById('dropArea');
+            dropArea.classList.add('disabled');
+            dropArea.style.opacity = '0.6';
+            dropArea.style.cursor = 'not-allowed';
+
+            // 更新系统状态提示
+            const systemStatus = document.getElementById('systemStatus');
+            systemStatus.innerHTML = '<div class="status-processing">⚠️ 系统正在处理文档向量化，请稍后再上传...</div>';
+        }
+
+        // 隐藏向量化状态
+        function hideVectorizationStatus() {
+            const statusDiv = document.getElementById('vectorizationStatus');
+            statusDiv.style.display = 'none';
+            isVectorizing = false;
+
+            // 启用上传区域
+            const dropArea = document.getElementById('dropArea');
+            dropArea.classList.remove('disabled');
+            dropArea.style.opacity = '1';
+            dropArea.style.cursor = 'pointer';
+
+            // 停止进度模拟
+            if (vectorizationCheckTimer) {
+                clearInterval(vectorizationCheckTimer);
+                vectorizationCheckTimer = null;
+            }
+
+            // 清空进度条
+            const progressFill = document.getElementById('vectorizationProgressFill');
+            progressFill.style.width = '0%';
+
+            // 更新系统状态提示
+            const systemStatus = document.getElementById('systemStatus');
+            systemStatus.innerHTML = '<div class="status-ready">✅ 系统准备就绪，可以上传文档</div>';
+        }
+
+        // 模拟向量化进度
+        function simulateVectorizationProgress() {
+            const progressFill = document.getElementById('vectorizationProgressFill');
+            let progress = 0;
+
+            if (vectorizationCheckTimer) {
+                clearInterval(vectorizationCheckTimer);
+            }
+
+            vectorizationCheckTimer = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 5;
+                    progressFill.style.width = Math.min(progress, 90) + '%';
+                }
+            }, 1000);
+        }
+
+        // 设置拖放功能
+        function setupDragAndDrop() {
+            const dropArea = document.getElementById('dropArea');
+
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, preventDefaults, false);
+            });
+
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropArea.addEventListener(eventName, highlight, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropArea.addEventListener(eventName, unhighlight, false);
+            });
+
+            dropArea.addEventListener('drop', handleDrop, false);
+        }
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        function highlight() {
+            if (!isVectorizing) {
+                const dropArea = document.getElementById('dropArea');
+                dropArea.classList.add('dragover');
+            }
+        }
+
+        function unhighlight() {
+            const dropArea = document.getElementById('dropArea');
+            dropArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            if (isVectorizing) {
+                showSystemBusyModal();
+                return;
+            }
+
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+
+            unhighlight();
+        }
+
+        // 显示系统忙模态框
+        function showSystemBusyModal() {
+            const modal = document.getElementById('systemBusyModal');
+            modal.style.display = 'flex';
+        }
+
+        // 隐藏模态框
+        function hideModal() {
+            const modal = document.getElementById('systemBusyModal');
+            modal.style.display = 'none';
+        }
+
+        // 处理文件选择
+        function handleFiles(fileList) {
+            if (isVectorizing) {
+                showSystemBusyModal();
+                return;
+            }
+
+            const files = Array.from(fileList).filter(file => {
+                const validExtensions = ['.txt', '.pdf'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+                if (!validExtensions.includes(fileExt)) {
+                    showToast(`不支持的文件类型: ${file.name}，仅支持 TXT 和 PDF 格式`, 'error');
+                    return false;
+                }
+
+                if (file.size > 10 * 1024 * 1024) { // 10MB
+                    showToast(`文件过大: ${file.name}，最大支持 10MB`, 'error');
+                    return false;
+                }
+
+                return true;
+            });
+
+            if (files.length === 0) return;
+
+            files.forEach(file => {
+                addFileToList(file);
+            });
+
+            updateFileList();
+
+            // 显示上传按钮
+            const uploadBtn = document.getElementById('uploadBtn');
+            uploadBtn.style.display = 'inline-block';
+        }
+
+        // 添加文件到列表
+        function addFileToList(file) {
+            const fileId = Date.now() + '-' + Math.random().toString(36).substr(2, 9);
+            const fileExt = file.name.split('.').pop().toLowerCase();
+            const icon = fileExt === 'pdf' ? '📄' : '📝';
+
+            uploadedFiles.push({
+                id: fileId,
+                file: file,
+                name: file.name,
+                size: formatFileSize(file.size),
+                type: fileExt,
+                icon: icon,
+                status: 'pending',
+                uploaded: false
+            });
+        }
+
+        // 更新文件列表显示
+        function updateFileList() {
+            const fileList = document.getElementById('fileList');
+
+            if (uploadedFiles.length === 0) {
+                fileList.innerHTML = '<div class="no-files">暂无已上传文件</div>';
+                const uploadBtn = document.getElementById('uploadBtn');
+                uploadBtn.style.display = 'none';
+                return;
+            }
+
+            fileList.innerHTML = uploadedFiles.map(file => `
+                <div class="file-item" data-id="${file.id}">
+                    <div class="file-icon ${file.type}">${file.icon}</div>
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-meta">
+                            <span>${file.size}</span>
+                            <span>${file.type.toUpperCase()}</span>
+                        </div>
+                    </div>
+                    <div class="file-status status-${file.status}">
+                        ${file.status === 'pending' ? '等待上传' :
+                          file.status === 'uploading' ? '上传中' :
+                          file.status === 'success' ? '已上传' :
+                          file.status === 'processing' ? '向量化中' :
+                          file.status === 'duplicate' ? '已存在' : '上传失败'}
+                    </div>
+                    <div class="file-actions">
+                        ${file.status === 'processing' ? '<div class="spinner"></div>' :
+                          `<button class="file-action-btn" onclick="removeFile('${file.id}')" title="删除">
+                            ❌
+                          </button>`}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 开始上传
+        async function startUpload() {
+            if (isVectorizing) {
+                showSystemBusyModal();
+                return;
+            }
+
+            if (isUploading || uploadedFiles.length === 0) return;
+
+            isUploading = true;
+            const progressContainer = document.getElementById('progressContainer');
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            progressContainer.style.display = 'block';
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '上传中...';
+
+            const pendingFiles = uploadedFiles.filter(f => f.status === 'pending');
+            const totalFiles = pendingFiles.length;
+            let completed = 0;
+
+            for (let i = 0; i < pendingFiles.length; i++) {
+                const file = pendingFiles[i];
+                file.status = 'uploading';
+                updateFileList();
+
+                try {
+                    // 实际上传文件到服务器
+                    const result = await uploadFileToServer(file);
+
+                    if (result.success) {
+                        file.status = 'processing';  // 上传成功，开始向量化
+                        file.uploaded = true;
+                        showToast(`${file.name} 上传成功，开始向量化处理...`, 'success');
+
+                        // 显示向量化状态
+                        showVectorizationStatus();
+
+                        // 开始监控向量化进度
+                        monitorVectorization(file.id);
+
+                    } else if (result.status === 'duplicate') {
+                        // 文件已存在的情况
+                        file.status = 'duplicate';
+                        file.uploaded = false;
+                        showToast(`${file.name} 已存在于服务器中`, 'info');
+                    } else if (result.status === 'system_busy') {
+                        // 系统忙的情况
+                        file.status = 'pending';
+                        file.uploaded = false;
+                        showToast(`${file.name} 上传失败: 系统忙，请稍后再试`, 'error');
+                        showSystemBusyModal();
+                        break;  // 停止上传后续文件
+                    } else {
+                        file.status = 'error';
+                        file.uploaded = false;
+                        showToast(`${file.name} 上传失败: ${result.message || '未知错误'}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('上传失败:', error);
+                    file.status = 'error';
+                    file.uploaded = false;
+                    showToast(`${file.name} 上传失败: ${error.message || '网络错误'}`, 'error');
+                }
+
+                completed++;
+                const progress = Math.round((completed / totalFiles) * 100);
+                progressFill.style.width = progress + '%';
+                progressText.textContent = progress + '%';
+
+                updateFileList();
+            }
+
+            isUploading = false;
+            progressContainer.style.display = 'none';
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '开始上传';
+
+            // 如果全部文件都已上传，清空列表
+            const allProcessed = uploadedFiles.every(f => f.status !== 'pending' && f.status !== 'uploading');
+            if (allProcessed) {
+                setTimeout(() => {
+                    uploadedFiles = [];
+                    updateFileList();
+                }, 3000);
+            }
+        }
+
+        // 监控向量化进度
+        function monitorVectorization(fileId) {
+            // 每2秒检查一次向量化状态
+            const checkInterval = setInterval(() => {
+                fetch('/rag_agent/api/system-status')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (!data.is_vectorizing) {
+                            // 向量化完成
+                            const file = uploadedFiles.find(f => f.id === fileId);
+                            if (file) {
+                                file.status = 'success';
+                                updateFileList();
+                            }
+
+                            hideVectorizationStatus();
+                            showToast('文档向量化完成！', 'success');
+                            clearInterval(checkInterval);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('监控向量化状态失败:', error);
+                    });
+            }, 2000);
+        }
+
+        // 上传文件到服务器
+        async function uploadFileToServer(file) {
+            const formData = new FormData();
+            formData.append('file', file.file);
+            formData.append('session_id', chatSessionId);
+            formData.append('filename', file.name);
+
+            try {
+                const response = await fetch('/rag_agent/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    return {
+                        success: true,
+                        ...data
+                    };
+                } else {
+                    // 检查是否是系统忙的错误
+                    if (data.message && data.message.includes('正在处理上一个文件')) {
+                        return {
+                            success: false,
+                            status: 'system_busy',
+                            message: data.message
+                        };
+                    }
+                    // 检查是否是重复文件
+                    else if (data.message && data.message.includes('已存在于服务器中')) {
+                        return {
+                            success: false,
+                            status: 'duplicate',
+                            message: data.message
+                        };
+                    } else {
+                        throw new Error(data.message || '上传失败');
+                    }
+                }
+            } catch (error) {
+                throw error;
+            }
+        }
+
+        // 删除文件
+        function removeFile(fileId) {
+            if (confirm('确定要删除这个文件吗？')) {
+                uploadedFiles = uploadedFiles.filter(f => f.id !== fileId);
+                updateFileList();
+            }
+        }
+
+        // 清空文件列表
+        function clearFileList() {
+            if (uploadedFiles.length === 0) return;
+
+            if (confirm('确定要清空所有文件吗？')) {
+                uploadedFiles = uploadedFiles.filter(f => f.status === 'processing');
+                if (uploadedFiles.length === 0) {
+                    showToast('已清空所有文件', 'info');
+                } else {
+                    showToast('正在向量化的文件无法清除，已清除其他文件', 'info');
+                }
+                updateFileList();
+            }
+        }
+
+        // 清空对话历史
+        async function clearChatHistory() {
+            if (confirm('确定要清空对话历史吗？当前对话上下文将被重置。')) {
+                try {
+                    const response = await fetch('/rag_agent/api/clear-history', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            session_id: chatSessionId
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        // 清空前端消息显示，但保留欢迎消息
+                        const chatMessages = document.getElementById('chatMessages');
+                        const welcomeMessage = document.getElementById('welcomeMessage');
+
+                        // 清空所有消息
+                        chatMessages.innerHTML = '';
+
+                        // 重新添加欢迎消息
+                        if (welcomeMessage) {
+                            const newWelcome = welcomeMessage.cloneNode(true);
+                            newWelcome.id = 'welcomeMessage';
+                            chatMessages.appendChild(newWelcome);
+                        }
+
+                        // 重置历史计数器
+                        currentHistoryLength = 0;
+                        updateHistoryIndicator(0);
+
+                        // 清空本地的历史记录
+                        sessionStorage.removeItem('chatHistory');
+
+                        showToast('对话历史已清空', 'success');
+                    } else {
+                        showToast(`清空历史失败: ${data.message}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('清空对话历史失败:', error);
+                    showToast('清空历史失败，请重试', 'error');
+                }
+            }
+        }
+
+        // 格式化文件大小
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // 发送消息
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+
+            if (!message) {
+                showToast('请输入消息', 'error');
+                return;
+            }
+
+            // 禁用输入和按钮
+            input.disabled = true;
+            const sendButton = document.getElementById('sendButton');
+            const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+            const refreshReportsBtn = document.getElementById('refreshReportsBtn');
+            sendButton.disabled = true;
+            clearHistoryBtn.disabled = true;
+            refreshReportsBtn.disabled = true;
+
+            // 添加用户消息
+            addMessage(message, 'user');
+
+            // 清空输入框
+            input.value = '';
+            autoResize(input);
+
+            // 添加AI回复（模拟）
+            addMessage('正在思考中...', 'ai', true);
+
+            try {
+                // 发送消息到服务器
+                const response = await sendToServer(message);
+
+                // 移除"正在思考"消息
+                removeLastMessage();
+
+                // 添加实际回复
+                addMessage(response, 'ai');
+
+                // 检查回复中是否包含报告生成提示，如果是则刷新报告列表
+                if (response.includes('HTML文件已成功保存') || response.includes('报告文件保存成功')) {
+                    setTimeout(() => {
+                        showToast('检测到新报告生成，刷新报告列表...', 'info');
+                        loadReportList();
+                    }, 1000);
+                }
+
+                // 更新历史记录数量
+                await checkChatHistory();
+
+            } catch (error) {
+                // 移除"正在思考"消息
+                removeLastMessage();
+                addMessage('抱歉，我遇到了一些问题。请稍后再试。', 'ai');
+                showToast('发送消息失败: ' + error.message, 'error');
+                console.error('发送消息失败:', error);
+            } finally {
+                // 重新启用输入
+                input.disabled = false;
+                sendButton.disabled = false;
+                clearHistoryBtn.disabled = false;
+                refreshReportsBtn.disabled = false;
+                input.focus();
+            }
+        }
+
+        // 发送消息到服务器
+        async function sendToServer(message) {
+            const response = await fetch('/rag_agent/api/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    message: message,
+                    session_id: chatSessionId
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || '服务器响应错误');
+            }
+
+            const data = await response.json();
+
+            if (!data.success) {
+                throw new Error(data.message || 'AI响应错误');
+            }
+
+            return data.message;
+        }
+
+        // 添加消息到聊天框
+        function addMessage(text, sender, isThinking = false, isHistory = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+
+            // 如果是第一条用户消息，隐藏欢迎消息
+            if (sender === 'user' && !isHistory) {
+                hideWelcomeMessage();
+            }
+
+            const messageId = 'msg_' + Date.now();
+            const time = new Date().toLocaleTimeString('zh-CN', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+
+            const messageElement = document.createElement('div');
+            messageElement.className = `message message-${sender}`;
+            messageElement.id = messageId;
+
+            // 如果是"正在思考"消息，添加特殊样式
+            if (isThinking) {
+                messageElement.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-text" style="font-style: italic; opacity: 0.8;">${escapeHtml(text)}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            } else {
+                messageElement.innerHTML = `
+                    <div class="message-content">
+                        <div class="message-text">${formatMessageText(text)}</div>
+                        <div class="message-time">${time}</div>
+                    </div>
+                `;
+            }
+
+            messagesContainer.appendChild(messageElement);
+
+            // 滚动到底部（如果不是加载历史记录）
+            if (!isHistory) {
+                const chatContainer = document.getElementById('chatContainer');
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+
+        // 格式化消息文本，将Markdown转换为简单HTML
+        function formatMessageText(text) {
+            // 基本的Markdown格式化
+            let formattedText = escapeHtml(text);
+
+            // 处理标题
+            formattedText = formattedText.replace(/^# (.*$)/gm, '<h3>$1</h3>');
+            formattedText = formattedText.replace(/^## (.*$)/gm, '<h4>$1</h4>');
+            formattedText = formattedText.replace(/^### (.*$)/gm, '<h5>$1</h5>');
+
+            // 处理粗体
+            formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 处理斜体
+            formattedText = formattedText.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // 处理列表
+            formattedText = formattedText.replace(/^- (.*$)/gm, '<li>$1</li>');
+            formattedText = formattedText.replace(/\n<li>/g, '<ul><li>');
+            formattedText = formattedText.replace(/<\/li>\n/g, '</li></ul>');
+
+            // 处理换行
+            formattedText = formattedText.replace(/\n/g, '<br>');
+
+            return formattedText;
+        }
+
+        // 移除最后一条消息
+        function removeLastMessage() {
+            const messages = document.querySelectorAll('.message');
+            if (messages.length > 0) {
+                messages[messages.length - 1].remove();
+            }
+        }
+
+        // 隐藏欢迎消息
+        function hideWelcomeMessage() {
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            if (welcomeMessage && welcomeMessage.style.display !== 'none') {
+                welcomeMessage.style.display = 'none';
+            }
+        }
+
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast toast-' + type;
+            toast.style.display = 'block';
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // 处理键盘事件
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // 自动调整输入框高度
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        // HTML转义
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+
+    <style>
+        /* 新增的样式 */
+        .history-status {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 10px 15px;
+            border: 1px solid #e9ecef;
+            font-size: 14px;
+        }
+
+        .history-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-info span:first-child {
+            color: #666;
+        }
+
+        .history-info span:last-child {
+            color: #2c3e50;
+            font-weight: bold;
+        }
+
+        /* 报告列表样式 */
+        .download-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 1px solid #e9ecef;
+        }
+
+        .report-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .report-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e9ecef;
+            transition: all 0.3s ease;
+        }
+
+        .report-item:hover {
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .report-icon {
+            font-size: 20px;
+            margin-right: 10px;
+        }
+
+        .report-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .report-title {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .report-meta {
+            font-size: 12px;
+            color: #666;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .download-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+
+        .download-btn:hover {
+            background: #2980b9;
+        }
+
+        .no-reports {
+            text-align: center;
+            color: #999;
+            padding: 20px;
+            font-style: italic;
+        }
+
+        .refresh-reports-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            color: #666;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .refresh-reports-btn:hover {
+            background: #e9ecef;
+        }
+
+        .clear-history-btn {
+            background: #f8f9fa;
+            border: 1px solid #ddd;
+            color: #666;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: block;
+            width: 100%;
+        }
+
+        .clear-history-btn:hover {
+            background: #ffe6e6;
+            color: #e74c3c;
+        }
+    </style>
+</body>
+

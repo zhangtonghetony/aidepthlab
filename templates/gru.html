@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRU 金融翻译系统 - 演示版</title>
+    <style>
+        /* 原生 CSS 重置与基础样式 */
+        :root {
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --terminal-bg: #1e293b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 100%;
+        }
+
+        /* 标题样式 */
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            color: #0f172a;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* 主卡片容器 */
+        .card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* 输入区 */
+        .input-section {
+            padding: 24px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #334155;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            resize: none;
+            box-sizing: border-box;
+            outline: none;
+            transition: border-color 0.2s, ring 0.2s;
+        }
+
+        textarea:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        /* 样本按钮 */
+        .samples {
+            margin-top: 12px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .sample-tag {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .btn-sample {
+            background: #f1f5f9;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sample:hover {
+            background: #e0e7ff;
+            color: var(--primary-color);
+        }
+
+        /* 动作条 */
+        .action-bar {
+            padding: 16px 24px;
+            background: #f8fafc;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        #statusInfo {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .btn-translate {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+
+        .btn-translate:hover {
+            background: var(--primary-hover);
+        }
+
+        .btn-translate:active {
+            transform: scale(0.96);
+        }
+
+        .btn-translate:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        /* 输出终端 */
+        .output-section {
+            padding: 24px;
+            background: var(--terminal-bg);
+            color: #f1f5f9;
+            min-height: 140px;
+        }
+
+        .output-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #94a3b8;
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        #resultArea {
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #e0e7ff;
+        }
+
+        /* 动画 */
+        @keyframes blink {
+            50% { opacity: 0.5; }
+        }
+        .loading-text {
+            animation: blink 1s infinite;
+            color: #818cf8;
+        }
+
+        /* 技术标签 */
+        .footer-tags {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .tag-card {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .tag-title {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+        }
+
+        .tag-desc {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <h1>GRU Seq2Seq 金融翻译系统</h1>
+            <p>基于 Attention 机制的序列建模演示</p>
+        </div>
+
+        <div class="card">
+            <div class="input-section">
+                <label class="label">源语言 (中文)</label>
+                <textarea id="inputText" placeholder="请输入金融相关中文文本..."></textarea>
+
+                <div class="samples">
+                    <span class="sample-tag">推荐测试：</span>
+                    <button class="btn-sample" onclick="useSample('贸易顺差有利于国家外汇储备增长。')">顺差样本</button>
+                    <button class="btn-sample" onclick="useSample('股票市场今日开盘后出现大幅震荡。')">股市样本</button>
+                </div>
+            </div>
+
+            <div class="action-bar">
+                <div id="statusInfo">系统就绪</div>
+                <button id="translateBtn" class="btn-translate" onclick="handleTranslate()">
+                    <span id="btnText">开始翻译</span>
+                </button>
+            </div>
+
+            <div class="output-section">
+                <span class="output-label">目标语言 (英文生成结果)</span>
+                <div id="resultArea">
+                    <span style="color: #64748b;">等待指令输入...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer-tags">
+            <div class="tag-card">
+                <div class="tag-title">模型架构</div>
+                <div class="tag-desc">Encoder-Decoder</div>
+            </div>
+            <div class="tag-card">
+                <div class="tag-title">文本表示</div>
+                <div class="tag-desc">Word2Vec (Char-level)</div>
+            </div>
+            <div class="tag-card">
+                <div class="tag-title">推理策略</div>
+                <div class="tag-desc">Greedy Search</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心交互逻辑
+        function useSample(text) {
+            document.getElementById('inputText').value = text;
+            document.getElementById('statusInfo').innerText = "样本数据已就绪";
+        }
+
+        async function handleTranslate() {
+            const inputField = document.getElementById('inputText');
+            const resultArea = document.getElementById('resultArea');
+            const btn = document.getElementById('translateBtn');
+            const btnText = document.getElementById('btnText');
+            const statusInfo = document.getElementById('statusInfo');
+
+            const text = inputField.value.trim();
+            if (!text) {
+                statusInfo.innerText = "请输入内容后再试";
+                return;
+            }
+
+            // UI 状态重置
+            btn.disabled = true;
+            btnText.innerText = "正在计算...";
+            statusInfo.innerText = "正在通过 GRU 进行推理...";
+            resultArea.innerHTML = '<span class="loading-text">模型正在生成特征向量并解码...</span>';
+
+            try {
+                const response = await fetch('/gru/translate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text: text })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // 成功：模拟终端打字效果或直接显示
+                    resultArea.innerHTML = `<span style="color: #4ade80;">$ </span>${data.result}`;
+                    statusInfo.innerText = "推理成功";
+                } else {
+                    resultArea.innerHTML = `<span style="color: #f87171;">推理失败: ${data.message}</span>`;
+                    statusInfo.innerText = "错误反馈";
+                }
+            } catch (err) {
+                resultArea.innerHTML = `<span style="color: #f87171;">后端连接异常，请确保 Flask 服务已启动</span>`;
+                statusInfo.innerText = "网络链接失败";
+            } finally {
+                btn.disabled = false;
+                btnText.innerText = "开始翻译";
+            }
+        }
+    </script>
+</body>
+</html>

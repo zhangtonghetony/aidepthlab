@@ -1,0 +1,21 @@
+POST /search.jsp?wbtreeid=1001 HTTP/1.1
+Host: crjy.hlju.edu.cn
+Cookie: JSESSIONID=FBA82459B28B823477DDF22C6084253F
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:144.0) Gecko/20100101 Firefox/144.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+Accept-Language: zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2
+Accept-Encoding: gzip, deflate, br
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 72
+Origin: https://crjy.hlju.edu.cn
+Referer: https://crjy.hlju.edu.cn/search.jsp?wbtreeid=1001
+Upgrade-Insecure-Requests: 1
+Sec-Fetch-Dest: document
+Sec-Fetch-Mode: navigate
+Sec-Fetch-Site: same-origin
+Sec-Fetch-User: ?1
+Priority: u=0, i
+Te: trailers
+Connection: keep-alive
+
+lucenenewssearchkey=MQ%3D%3D&_lucenesearchtype=1&searchScope=0&x=14&y=10

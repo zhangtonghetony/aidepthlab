@@ -1,0 +1,2 @@
+2026-02-22 13:03:58,801 - rag_agent - INFO - rag_agent.py:76 - 开始向量化处理: userini.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260222_130358_0cb735e9.txt)
+2026-02-22 13:04:00,255 - rag_agent - INFO - vector_store.py:171 - 文件已向量化: userini.txt

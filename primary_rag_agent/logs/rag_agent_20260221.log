@@ -1,0 +1,4 @@
+2026-02-21 13:45:11,050 - rag_agent - INFO - rag_agent.py:73 - 开始向量化处理: 尺码推荐.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260221_134511_5650cfc4.txt)
+2026-02-21 13:45:54,621 - rag_agent - INFO - vector_store.py:171 - 文件已向量化: 尺码推荐.txt
+2026-02-21 15:28:39,220 - rag_agent - INFO - rag_agent.py:76 - 开始向量化处理: 金融.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260221_152839_830379eb.txt)
+2026-02-21 15:29:22,809 - rag_agent - INFO - vector_store.py:171 - 文件已向量化: 金融.txt

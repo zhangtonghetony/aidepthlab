@@ -1,0 +1,16 @@
+2026-02-20 18:20:58,450 - rag_agent - INFO - vector_store.py:21 - ==================================================
+2026-02-20 18:20:58,450 - rag_agent - INFO - vector_store.py:22 - 初始化 VectorStoreService
+2026-02-20 18:20:58,450 - rag_agent - INFO - vector_store.py:23 - ==================================================
+2026-02-20 18:20:58,450 - rag_agent - INFO - vector_store.py:30 - 当前工作目录: C:\Users\zhang\Desktop\AI_display\primary_rag_agent\rag
+2026-02-20 18:20:58,450 - rag_agent - INFO - vector_store.py:31 - 配置文件上传目录: C:\Users\zhang\Desktop\AI_display\static\uploads
+2026-02-20 18:20:58,451 - rag_agent - INFO - vector_store.py:32 - 配置文件向量MD5文件: C:\Users\zhang\Desktop\AI_display\vector_md5.txt
+2026-02-20 18:20:58,451 - rag_agent - INFO - vector_store.py:33 - 配置文件持久化目录: C:\Users\zhang\Desktop\AI_display\chroma_db
+2026-02-20 18:20:58,451 - rag_agent - INFO - vector_store.py:36 - 上传目录存在: True
+2026-02-20 18:20:58,451 - rag_agent - INFO - vector_store.py:37 - 向量MD5文件存在: True
+2026-02-20 18:20:58,451 - rag_agent - INFO - vector_store.py:38 - 持久化目录存在: True
+2026-02-20 20:40:00,301 - rag_agent - INFO - rag_agent.py:242 - 开始向量化处理: 尺码推荐.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260220_204000_2844fec7.txt)
+2026-02-20 20:40:43,694 - rag_agent - INFO - rag_agent.py:191 - 文件已向量化: 尺码推荐.txt
+2026-02-20 20:41:14,148 - rag_agent - INFO - rag_agent.py:242 - 开始向量化处理: 洗涤养护.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260220_204114_495418dd.txt)
+2026-02-20 20:42:41,116 - rag_agent - INFO - rag_agent.py:191 - 文件已向量化: 洗涤养护.txt
+2026-02-20 21:07:21,422 - rag_agent - INFO - rag_agent.py:71 - 开始向量化处理: 尺码推荐.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260220_210721_126347b1.txt)
+2026-02-20 21:08:04,924 - rag_agent - INFO - vector_store.py:171 - 文件已向量化: 尺码推荐.txt

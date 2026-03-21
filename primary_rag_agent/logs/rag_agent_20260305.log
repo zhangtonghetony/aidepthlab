@@ -1,0 +1,4 @@
+2026-03-05 20:19:40,329 - rag_agent - INFO - rag_agent.py:83 - 开始向量化处理: hljedu.txt (C:\Users\zhang\Desktop\AI_display\static\uploads\20260305_201940_842f9197.txt)
+2026-03-05 20:19:41,340 - rag_agent - ERROR - vector_store.py:176 - 文件向量化失败 hljedu.txt: status_code: 400 
+ code: Arrearage 
+ message: Access denied, please make sure your account is in good standing. For details, see: https://help.aliyun.com/zh/model-studio/error-code#overdue-payment

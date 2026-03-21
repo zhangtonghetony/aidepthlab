@@ -1,0 +1,3 @@
+main_prompt_path : C:\Users\zhang\Desktop\AI_display\primary_rag_agent\prompts\main_prompt.txt
+rag_summarize_path : C:\Users\zhang\Desktop\AI_display\primary_rag_agent\prompts\rag_summarize.txt
+report_path : C:\Users\zhang\Desktop\AI_display\primary_rag_agent\prompts\report_prompt.txt

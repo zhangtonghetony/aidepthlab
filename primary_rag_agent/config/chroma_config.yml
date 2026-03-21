@@ -1,0 +1,13 @@
+collection_name : rag_agent
+k : 3
+persist_dir: C:\Users\zhang\Desktop\AI_display\chroma_db
+upload_dir : C:\Users\zhang\Desktop\AI_display\static\uploads
+
+chunk_size : 200
+overlap : 20
+separators: ['\n\n','\n','',' ','.','。','?','？']
+
+MD5_FILE : C:\Users\zhang\Desktop\AI_display\md5.txt
+VECTOR_MD5_FILE : C:\Users\zhang\Desktop\AI_display\vector_md5.txt
+
+REPORTS_DIR : C:\Users\zhang\Desktop\AI_display\static\report

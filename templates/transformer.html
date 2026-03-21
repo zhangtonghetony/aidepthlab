@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transformer 金融摘要生成系统</title>
+    <style>
+        /* CSS 样式部分 */
+        :root {
+            --primary-color: #007bff;
+            --primary-hover: #0056b3;
+            --bg-dark: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --border-color: #333;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-color);
+            font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            line-height: 1.6;
+        }
+
+        .container {
+            width: 95%;
+            max-width: 900px;
+            padding: 40px 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+
+        .highlight { color: var(--primary-color); }
+
+        header p {
+            color: #888;
+            font-size: 1.1rem;
+        }
+
+        .input-section, .output-section {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 12px;
+            font-weight: bold;
+            color: #bbb;
+        }
+
+        textarea {
+            width: 100%;
+            height: 240px; /* 稍微加高一点以容纳演示文本 */
+            background: #2c2c2c;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: #fff;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 15px;
+            font-family: inherit;
+            resize: none;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .slider-group {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: #444;
+            border-radius: 5px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: var(--primary-color);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .hint {
+            display: block;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary-color), #00c6ff);
+            color: white;
+            border: none;
+            padding: 14px 40px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0,123,255,0.3);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,123,255,0.4);
+        }
+
+        button:active { transform: translateY(0); }
+
+        button:disabled {
+            background: #444;
+            box-shadow: none;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #outputContainer {
+            background: #181818;
+            padding: 20px;
+            border-radius: 8px;
+            min-height: 100px;
+            border-left: 5px solid var(--primary-color);
+            position: relative;
+        }
+
+        #outputText {
+            margin: 0;
+            white-space: pre-wrap;
+            font-size: 1.1rem;
+        }
+
+        .placeholder { color: #555; font-style: italic; }
+
+        .hidden { display: none; }
+
+        /* 加载动画 */
+        #loader {
+            border: 4px solid #333;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Transformer <span class="highlight">Summarizer</span></h1>
+            <p>基于自回归机制的金融文本摘要生成系统</p>
+        </header>
+
+        <main>
+            <div class="input-section">
+                <label for="inputText">待处理金融原文:</label>
+                <textarea id="inputText">近日，中国人民银行宣布了一系列旨在促进经济稳定增长的货币政策调整。首先，央行决定下调金融机构存款准备金率0.5个百分点，以释放更多流动性支持实体经济。此举预计将向市场注入约1万亿元人民币的资金。此外，央行还表示将通过定向中期借贷便利（TMLF）工具，为中小银行提供低成本资金，以增强其服务小微企业和民营企业的能力。同时，为了进一步加强金融监管，银保监会发布新规，要求商业银行严格控制房地产贷款比例，并加强对互联网金融平台的监管力度，确保金融市场健康发展。在保险领域，监管机构鼓励保险公司开发更多创新型产品，满足消费者多样化需求。资本市场方面，证监会推出多项措施，包括优化股票发行注册制、扩大外资参与A股市场的渠道等，以提高市场活力。金融科技领域，央行正积极推进数字货币的研发与试点，预计将在未来几年内逐步推广使用。国际贸易方面，中国政府继续推动"一带一路"倡议，加强与沿线国家的经贸合作，促进全球经济复苏。这些政策的出台，体现了政府对宏观经济调控的决心，旨在实现高质量发展。</textarea>
+
+                <div class="controls">
+                    <div class="slider-group">
+                        <div class="slider-header">
+                            <span>生成温度 (Temperature)</span>
+                            <span id="tempValue" class="highlight">0.7</span>
+                        </div>
+                        <input type="range" id="tempSlider" min="0.1" max="1.5" step="0.1" value="0.7">
+                        <small class="hint">默认 0.7 效果最佳：值越低越稳，值越高越随机</small>
+                    </div>
+                    <button id="generateBtn">立即生成摘要</button>
+                </div>
+            </div>
+
+            <div class="output-section">
+                <label>生成结果:</label>
+                <div id="outputContainer">
+                    <p id="outputText" class="placeholder">点击上方“立即生成”查看模型推理结果...</p>
+                    <div id="loader" class="hidden"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tempSlider = document.getElementById('tempSlider');
+            const tempValue = document.getElementById('tempValue');
+            const generateBtn = document.getElementById('generateBtn');
+            const inputText = document.getElementById('inputText');
+            const outputText = document.getElementById('outputText');
+            const loader = document.getElementById('loader');
+
+            // 1. 实时监听滑动条
+            tempSlider.addEventListener('input', (e) => {
+                tempValue.textContent = e.target.value;
+            });
+
+            // 2. 处理按钮点击
+            generateBtn.addEventListener('click', async () => {
+                const text = inputText.value.trim();
+                const temp = parseFloat(tempSlider.value);
+
+                if (!text) {
+                    alert('内容不能为空');
+                    return;
+                }
+
+                // 切换UI状态为加载中
+                generateBtn.disabled = true;
+                generateBtn.textContent = '正在生成...';
+                outputText.classList.add('hidden');
+                loader.classList.remove('hidden');
+
+                try {
+                    const response = await fetch('/transformer/generate', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            text: text,
+                            temperature: temp
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        outputText.textContent = result.text;
+                        outputText.classList.remove('placeholder');
+                        outputText.style.color = '#ffffff';
+                    } else {
+                        outputText.textContent = '生成失败: ' + result.message;
+                        outputText.style.color = '#ff4444';
+                    }
+                } catch (error) {
+                    console.error('Fetch Error:', error);
+                    outputText.textContent = '连接后端失败，请确保 Flask 服务处于运行状态。';
+                    outputText.style.color = '#ff4444';
+                } finally {
+                    generateBtn.disabled = false;
+                    generateBtn.textContent = '立即生成摘要';
+                    loader.classList.add('hidden');
+                    outputText.classList.remove('hidden');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

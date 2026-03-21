@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BERT 金融评论风险监控系统</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --text-color: #1e293b;
+            --danger-red: #ef4444;
+            --safe-green: #22c55e;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08);
+            width: 100%;
+            max-width: 650px;
+        }
+
+        h2 {
+            margin: 0 0 0.5rem 0;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2::before {
+            content: '';
+            width: 5px;
+            height: 24px;
+            background: var(--primary-color);
+            border-radius: 10px;
+        }
+
+        .desc { color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+        textarea {
+            width: 100%;
+            height: 140px;
+            padding: 16px;
+            border: 1.5px solid #e2e8f0;
+            border-radius: 12px;
+            resize: vertical;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            box-sizing: border-box;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 1rem;
+            width: 100%;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.95; }
+        button:active { transform: scale(0.98); }
+        button:disabled { background-color: #94a3b8; cursor: not-allowed; }
+
+        #result-section {
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 10px;
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .success { background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; }
+        .error { background-color: #fef2f2; border: 1px solid #fecaca; color: #991b1b; }
+
+        /* LIME 可视化样式 */
+        #explanation-section {
+            margin-top: 2rem;
+            border-top: 2px solid #f1f5f9;
+            padding-top: 1.5rem;
+            display: none;
+            animation: slideUp 0.5s ease;
+        }
+
+        .weight-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .word-label {
+            width: 90px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .bar-container {
+            flex-grow: 1;
+            height: 20px;
+            background-color: #f1f5f9;
+            border-radius: 4px;
+            margin: 0 12px;
+            overflow: hidden;
+        }
+
+        .bar-fill {
+            height: 100%;
+            transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .bar-pos { background: linear-gradient(90deg, #f87171, var(--danger-red)); }
+        .bar-neg { background: linear-gradient(90deg, #4ade80, var(--safe-green)); }
+
+        .score-val {
+            width: 55px;
+            text-align: right;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin: 15px 0;
+            font-size: 0.85rem;
+            color: var(--primary-color);
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>BERT 模型在线测试</h2>
+    <p class="desc">请输入一段金融评论，点击下方按钮调用微调后的BERT 模型进行风险等级判断，并利用 LIME 拆解模型决策的关键词影响权重。</p>
+
+    <textarea id="commentInput" placeholder="输入评论，例如：最近经济形势挺好的，大家可以稍微加大持仓量，别太冲动就行"></textarea>
+
+    <button id="submitBtn" onclick="analyzeText()">开始分析</button>
+
+    <div id="loader" class="loader">正在启动 BERT 推理引擎...</div>
+
+    <div id="result-section">
+        <strong>预测结果：</strong>
+        <span id="resultText"></span>
+    </div>
+
+    <div id="explanation-section">
+        <p style="margin: 0 0 1rem 0; font-size: 0.9rem; font-weight: 600;">核心词汇贡献度 (Local Weights)：</p>
+        <div id="weightsList"></div>
+        <p style="font-size: 0.75rem; color: #94a3b8; margin-top: 15px; line-height: 1.4;">
+            💡 <b>红色正分</b>：代表该词显著增强了模型判定为当前等级的信心。<br>
+            💡 <b>绿色负分</b>：代表该词在尝试将模型推向其他判断维度。
+        </p>
+    </div>
+</div>
+
+<script>
+    async function analyzeText() {
+        const comment = document.getElementById('commentInput').value.trim();
+        const btn = document.getElementById('submitBtn');
+        const loader = document.getElementById('loader');
+        const resultSection = document.getElementById('result-section');
+        const resultText = document.getElementById('resultText');
+        const explanationSection = document.getElementById('explanation-section');
+        const weightsList = document.getElementById('weightsList');
+
+        if (!comment) {
+            alert("请输入内容后再测试哦！");
+            return;
+        }
+
+        // 状态初始化
+        btn.disabled = true;
+        loader.style.display = 'block';
+        resultSection.style.display = 'none';
+        explanationSection.style.display = 'none';
+        weightsList.innerHTML = '';
+
+        try {
+            // 第一步：获取模型预测标签
+            const predRes = await fetch('/bert/predict', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: comment })
+            });
+
+            const predData = await predRes.json();
+
+            if (predRes.ok && predData.success) {
+                resultSection.className = 'success';
+                resultText.innerText = predData.result;
+                resultSection.style.display = 'block';
+
+                // 第二步：获取 LIME 解释结果
+                loader.innerText = "正在使用 LIME 算法计算特征权重...";
+
+                const expRes = await fetch('/bert/explain', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: comment,
+                        label: predData.label // 将预测的标签传回，解释该类别的成因
+                    })
+                });
+
+                const expData = await expRes.json();
+
+                if (expData.success && expData.weights) {
+                    renderWeights(expData.weights);
+                    explanationSection.style.display = 'block';
+                }
+            } else {
+                throw new Error(predData.message || "推理失败");
+            }
+
+        } catch (error) {
+            resultSection.className = 'error';
+            resultText.innerText = "分析出错: " + error.message;
+            resultSection.style.display = 'block';
+        } finally {
+            btn.disabled = false;
+            loader.style.display = 'none';
+            loader.innerText = "正在启动 BERT 推理引擎...";
+        }
+    }
+
+    function renderWeights(weights) {
+        const list = document.getElementById('weightsList');
+
+        // 找到最大权重绝对值用于宽度映射
+        const absWeights = weights.map(w => Math.abs(w[1]));
+        const maxVal = Math.max(...absWeights, 0.0001);
+
+        weights.forEach(([word, score]) => {
+            const percentage = (Math.abs(score) / maxVal) * 100;
+            const isPositive = score > 0;
+
+            const row = document.createElement('div');
+            row.className = 'weight-item';
+            row.innerHTML = `
+                <div class="word-label" title="${word}">${word}</div>
+                <div class="bar-container">
+                    <div class="bar-fill ${isPositive ? 'bar-pos' : 'bar-neg'}"
+                         style="width: 0%"></div>
+                </div>
+                <div class="score-val">${isPositive ? '+' : ''}${score.toFixed(3)}</div>
+            `;
+            list.appendChild(row);
+
+            // 触发动画效果
+            setTimeout(() => {
+                row.querySelector('.bar-fill').style.width = percentage + '%';
+            }, 50);
+        });
+    }
+</script>
+
+</body>
+</html>
